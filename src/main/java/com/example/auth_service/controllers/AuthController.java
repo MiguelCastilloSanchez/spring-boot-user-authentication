@@ -1,11 +1,14 @@
 package com.example.auth_service.controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,6 +22,8 @@ import com.example.auth_service.entities.users.dtos.LoginResponseDTO;
 import com.example.auth_service.entities.users.dtos.RegisterDTO;
 import com.example.auth_service.repositories.UserRepository;
 import com.example.auth_service.services.TokenService;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping(value = "/auth", produces = {"application/json"})
@@ -35,12 +40,18 @@ public class AuthController {
      * Registers a new user.
      *
      * @param data Object containing user registration data
+     * @param result Object checking the validation from registration data
      * @return ResponseEntity indicating success or failure of registration
      */
     @SuppressWarnings("rawtypes")
     @PostMapping(value = "/register", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity register(@RequestBody RegisterDTO data) {
-        if (this.userRepository.findByEmail(data.email()) != null) return ResponseEntity.badRequest().build();
+    public ResponseEntity register(@Valid @RequestBody RegisterDTO data, BindingResult result) {
+
+        if (
+            (result.hasErrors()) ||
+            (this.userRepository.findByEmail(data.email()) != null) ||
+            (this.userRepository.findByName(data.name()) != null)
+        ) return ResponseEntity.badRequest().build();
 
         String encryptedPassword = new BCryptPasswordEncoder().encode(data.password());
         User user = new User(data.name(), data.email(), encryptedPassword, data.role());
@@ -60,11 +71,15 @@ public class AuthController {
     @PostMapping(value = "/login", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity login(@RequestBody AuthenticationDTO data) {
         var credentials = new UsernamePasswordAuthenticationToken(data.email(), data.password());
-        var auth = this.authenticationManager.authenticate(credentials);
-
-        var token = tokenService.generateToken((User) auth.getPrincipal());
-
-        return ResponseEntity.ok(new LoginResponseDTO(token));
+        
+        try {
+            var auth = this.authenticationManager.authenticate(credentials);
+            var token = tokenService.generateToken((User) auth.getPrincipal());
+            
+            return ResponseEntity.ok(new LoginResponseDTO(token));
+        } catch (AuthenticationException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
     }
 
     /**
@@ -80,13 +95,13 @@ public class AuthController {
 
         tokenService.revokeToken(token);
 
-        return ResponseEntity.ok("Logout successful");
+        return ResponseEntity.ok().build();
     }
 
     @SuppressWarnings("rawtypes")
     @GetMapping(value = "/test-api")
     public ResponseEntity test(){
-        return ResponseEntity.ok("Hello world");
+        return ResponseEntity.ok("Hello, World!");
     }
 
 }

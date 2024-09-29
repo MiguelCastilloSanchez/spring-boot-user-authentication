@@ -2,5 +2,23 @@ package com.example.auth_service.entities.users.dtos;
 
 import com.example.auth_service.entities.users.UserRole;
 
-public record RegisterDTO(String name, String email, String password, UserRole role) {
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
+public record RegisterDTO(
+    @NotBlank
+    @Size(min = 3, max = 30)
+    String name,
+
+    @NotBlank
+    @Email
+    String email,
+
+    @NotBlank
+    @Size(min = 6, max = 30)
+    String password,
+
+    UserRole role
+) {
 }
