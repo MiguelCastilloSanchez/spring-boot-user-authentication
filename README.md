@@ -18,7 +18,7 @@ This is a simple Spring Boot application that implements a user authentication s
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/your-username/spring-boot-user-authentication.git
+git clone https://github.com/MiguelCastilloSanchez/spring-boot-user-authentication
 ```
 
 2. Navigate into the project directory:
@@ -59,6 +59,8 @@ Send a POST request to `/auth/register` with a JSON body containing the user det
     "role": "USER"
 }
 ```
+
+If you want to use your own user example, make sure to accomplish the requirements defined in RegisterDTO. 
 
 ### Authenticate User
 
