@@ -47,11 +47,15 @@ public class AuthController {
     @PostMapping(value = "/register", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity register(@Valid @RequestBody RegisterDTO data, BindingResult result) {
 
+        if (result.hasErrors()) {
+            String error = result.getAllErrors().get(0).getDefaultMessage();
+            return ResponseEntity.badRequest().body(error);
+        }
+
         if (
-            (result.hasErrors()) ||
             (this.userRepository.findByEmail(data.email()) != null) ||
             (this.userRepository.findByName(data.name()) != null)
-        ) return ResponseEntity.badRequest().build();
+        ) return ResponseEntity.badRequest().body("Username or email already used");
 
         String encryptedPassword = new BCryptPasswordEncoder().encode(data.password());
         User user = new User(data.name(), data.email(), encryptedPassword, data.role());
@@ -78,7 +82,7 @@ public class AuthController {
             
             return ResponseEntity.ok(new LoginResponseDTO(token));
         } catch (AuthenticationException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Incorrect username or password");
         }
     }
 
